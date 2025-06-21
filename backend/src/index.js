@@ -34,7 +34,7 @@ app.use("/api/messages", messageRoutes);
 
 // Serve frontend in production
 if (process.env.NODE_ENV === "production") {
-    const frontendPath = join(__dirname, "../frontend/dist");
+    const frontendPath = join(__dirname, "../../frontend/dist");
     app.use(express.static(frontendPath));
 
     // Regex catch-all route (fixes pathToRegexpError)
