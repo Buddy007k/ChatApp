@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
-import { Image, Send, X } from "lucide-react";
+import { Image, Send, Timer, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const [selfDestruct, setSelfDestruct] = useState(false);
+  const [destructTime, setDestructTime] = useState(10); 
   const fileInputRef = useRef(null);
   const {sendMessage} = useChatStore();
 
@@ -36,11 +38,15 @@ const MessageInput = () => {
       await sendMessage({
         text: text.trim(),
         image: imagePreview,
+        selfDestruct,
+        destructTime: selfDestruct ? destructTime : null,
       });
 
       // Clear form
       setText("");
       setImagePreview(null);
+      setSelfDestruct(false);
+      setDestructTime(10); 
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Failed to send meassage: ", error);
@@ -67,6 +73,32 @@ const MessageInput = () => {
           </div>
         </div>
       )}
+
+      {/* 🔥 Self-Destruct Toggle UI */}
+      <div className="flex items-center gap-3 mb-2">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={selfDestruct}
+            onChange={(e) => setSelfDestruct(e.target.checked)}
+          />
+          <span className="text-sm">Self-destruct</span>
+        </label>
+        {selfDestruct && (
+          <div className="flex items-center gap-1">
+            <Timer size={16} />
+            <input
+              type="number"
+              className="input input-xs input-bordered w-20"
+              min={5}
+              max={600}
+              value={destructTime}
+              onChange={(e) => setDestructTime(Number(e.target.value))}
+            />
+            <span className="text-xs">sec</span>
+          </div>
+        )}
+      </div>
 
 
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">

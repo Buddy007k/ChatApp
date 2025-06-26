@@ -59,12 +59,25 @@ export const useChatStore = create((set, get) => ({
                 messages: [...get().messages, newMessage],
             });
         });
+
+        // 🔥 Listen for message deletion (self-destruct)
+        socket.on("messageDeleted", (messageId) => {
+            get().removeMessage(messageId);
+        });
     },
 
     unsubscribeFromMessages: () => {
         const socket = useAuthStore.getState().socket;
         socket.off("newMessage");
+        socket.off("messageDeleted");
     },
+
+    removeMessage: (messageId) => {
+        set((state) => ({
+            messages: state.messages.filter((msg) => msg._id !== messageId),
+        }));
+    },
+
 
     setSelectedUser: (selectedUser) => set({selectedUser}),
 }));

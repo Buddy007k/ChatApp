@@ -18,6 +18,14 @@ const messageSchema = new mongoose.Schema(
         image: {
             type:String,
         },
+        selfDestruct: {
+            type: Boolean,
+            default: false,
+        },
+        destructTime: {
+            type: Number, // in seconds
+            default: null,
+        },
     },
     {timestamps: true}
 );

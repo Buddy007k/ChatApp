@@ -38,7 +38,7 @@ export const getMessages = async (req,res) => {
 
 export const sendMessage = async (req,res) => {
     try {
-        const {text,image} = req.body;
+        const {text,image, selfDestruct, destructTime } = req.body;
         const {id: receiverId} = req.params;
         const senderId = req.user._id;
 
@@ -53,6 +53,8 @@ export const sendMessage = async (req,res) => {
             receiverId,
             text,
             image: imageUrl,
+            selfDestruct: selfDestruct || false,
+            destructTime: destructTime || null,
         });
 
         await newMessage.save();
@@ -62,6 +64,18 @@ export const sendMessage = async (req,res) => {
         if (receiverSocketId) {
             io.to(receiverSocketId).emit("newMessage", newMessage);
         };
+
+        //self-destruct logic
+        if (selfDestruct && destructTime) {
+            setTimeout(async () => {
+                await Message.findByIdAndDelete(newMessage._id);
+                // Optional: emit event to notify clients of deletion
+                if (receiverSocketId) {
+                    io.to(receiverSocketId).emit("messageDeleted", newMessage._id);
+                }
+                io.to(senderId.toString()).emit("messageDeleted", newMessage._id);
+            }, destructTime * 1000);
+        }
 
         res.status(201).json(newMessage);
     } catch (error) {
