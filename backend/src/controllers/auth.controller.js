@@ -4,9 +4,9 @@ import bcrypt from "bcryptjs"
 import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req,res) => {
-    const {fullName,email,password} = req.body;
+    const {fullName,email,password,publicKey} = req.body;
     try {
-        if (!fullName || !email || !password){
+        if (!fullName || !email || !password || !publicKey){
             return res.status(400).json({message: "All fields are required"});
         }
 
@@ -24,7 +24,8 @@ export const signup = async (req,res) => {
         const newUser = new User({
             fullName,
             email,
-            password:hashedPassword
+            password:hashedPassword,
+            publicKey,
         });
         
         if (newUser) {
@@ -37,6 +38,7 @@ export const signup = async (req,res) => {
                 fullName:newUser.fullName,
                 email:newUser.email,
                 profilePic:newUser.profilePic,
+                publicKey:newUser.publicKey,
             });
         } else {
             res.status(400).json({message: "Invalid User Data"});
@@ -68,6 +70,7 @@ export const login = async (req,res) => {
             fullName:user.fullName,
             email:user.email,
             profilePic:user.profilePic,
+            publicKey:user.publicKey,
         });
     } catch (error) {
         console.log("Error in login controller", error.message);
@@ -111,5 +114,20 @@ export const checkAuth = (req,res) => {
     } catch (error) {
         console.log("Error in checkAuth controller", error.message);
         res.status(500).json({message: "Internal server error"});
+    }
+};
+
+export const getPublicKey = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId).select("publicKey");
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({ publicKey: user.publicKey });
+    } catch (error) {
+        console.log("Error fetching public key", error.message);
+        res.status(500).json({ message: "Internal Server Error" });
     }
 };

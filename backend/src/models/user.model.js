@@ -19,6 +19,10 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: "",
         },
+        publicKey: {
+            type: String,
+            required: true,
+        },
     },
     {timestamps: true}
 );

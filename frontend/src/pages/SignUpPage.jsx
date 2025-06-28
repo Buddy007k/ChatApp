@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 
 import AuthImagePattern from "../components/AuthImagePattern"
 import toast from "react-hot-toast";
+import { exportPrivateKey, exportPublicKey, generateRSAKeyPair } from "../lib/crypto";
 
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,12 +27,36 @@ const SignUpPage = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const success = validateForm();
 
-    if (success===true) signup(formData);
+    if (success !== true) return;
+
+  try {
+    // 1. Generate RSA key pair
+    const { publicKey, privateKey } = await generateRSAKeyPair();
+
+    // 2. Export public key as string
+    const exportedPublicKey = await exportPublicKey(publicKey);
+
+    // 3. Export private key and store locally (IMPORTANT: secure this in real apps)
+    const exportedPrivateKey = await exportPrivateKey(privateKey);
+    localStorage.setItem("privateKey", exportedPrivateKey); // 🔐 Save private key
+
+    // 4. Add publicKey to formData
+    const signupData = {
+      ...formData,
+      publicKey: exportedPublicKey,
+    };
+
+    // 5. Call signup
+    signup(signupData);
+  } catch (err) {
+    toast.error("Key generation failed");
+    console.error("Error generating keys:", err);
+  }
   };
 
   return (

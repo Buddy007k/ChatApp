@@ -2,19 +2,23 @@ import { useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { Image, Send, Timer, X } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuthStore } from "../store/useAuthStore";
+import { encryptAESKeyWithRSA, encryptWithAES, generateAESKey } from "../lib/crypto";
+import { axiosInstance } from "../lib/axios";
 
 
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [selfDestruct, setSelfDestruct] = useState(false);
-  const [destructTime, setDestructTime] = useState(10); 
+  const [destructTime, setDestructTime] = useState(10);
   const fileInputRef = useRef(null);
-  const {sendMessage} = useChatStore();
+  const { sendMessage, selectedUser } = useChatStore();
+  const { authUser } = useAuthStore();
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if(!file.type.startsWith("image/")) {
+    if (!file.type.startsWith("image/")) {
       toast.error("Please select a valid image file");
       return;
     }
@@ -31,13 +35,38 @@ const MessageInput = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleSendMessage = async(e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
     try {
+      // 1. Fetch both sender and receiver public keys
+      const resReceiver = await axiosInstance.get(`/auth/public-key/${selectedUser._id}`);
+      const resSender = await axiosInstance.get(`/auth/public-key/${authUser._id}`);
+      const receiverPublicKey = resReceiver.data.publicKey;
+      const senderPublicKey = resSender.data.publicKey;
+
+
+      // 2. Generate AES key
+      const aesKey = await generateAESKey();
+
+      // 3. Encrypt text (if present)
+      const { cipher: encryptedText, iv: textIV } = text.trim()
+        ? await encryptWithAES(text.trim(), aesKey)
+        : { cipher: "", iv: "" };
+
+
+
+      // 5. Encrypt AES key for receiver and sender
+      const encryptedKeyForReceiver = await encryptAESKeyWithRSA(receiverPublicKey, aesKey);
+      const encryptedKeyForSender = await encryptAESKeyWithRSA(senderPublicKey, aesKey);
+
+      // 6. Send encrypted message
       await sendMessage({
-        text: text.trim(),
+        text: encryptedText,
         image: imagePreview,
+        aesKeyForReceiver: encryptedKeyForReceiver,
+        aesKeyForSender: encryptedKeyForSender,
+        textIV,
         selfDestruct,
         destructTime: selfDestruct ? destructTime : null,
       });
@@ -46,7 +75,7 @@ const MessageInput = () => {
       setText("");
       setImagePreview(null);
       setSelfDestruct(false);
-      setDestructTime(10); 
+      setDestructTime(10);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Failed to send meassage: ", error);
@@ -104,14 +133,14 @@ const MessageInput = () => {
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">
         <div className="flex-1 flex gap-2">
           <input
-            type="text" 
+            type="text"
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
           <input
-            type="file" 
+            type="file"
             accept="image/*"
             className="hidden"
             ref={fileInputRef}

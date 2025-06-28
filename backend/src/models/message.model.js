@@ -16,7 +16,21 @@ const messageSchema = new mongoose.Schema(
             type: String,
         },
         image: {
-            type:String,
+            type: String,
+        },
+        aesKeyForReceiver: {
+            type: String, // AES key encrypted with receiver's RSA public key
+            required: true,
+        },
+        aesKeyForSender: {
+            type: String, // AES key encrypted with sender's RSA public key
+            required: true,
+        },
+        textIV: {
+            type: String, // base64-encoded IV used to encrypt text
+        },
+        imageIV: {
+            type: String, // base64-encoded IV used to encrypt image
         },
         selfDestruct: {
             type: Boolean,
@@ -27,7 +41,7 @@ const messageSchema = new mongoose.Schema(
             default: null,
         },
     },
-    {timestamps: true}
+    { timestamps: true }
 );
 
 const Message = mongoose.model("Message", messageSchema);
