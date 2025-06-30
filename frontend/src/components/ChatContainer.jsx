@@ -120,36 +120,6 @@ const ChatContainer = () => {
     }
   }, [decryptedMessages]);
 
-  // Screenshot & security protection
-  useEffect(() => {
-    const blockPrintScreen = (e) => {
-      if (e.key === "PrintScreen") {
-        alert("🚫 Screenshot is not allowed.");
-        navigator.clipboard.writeText("Screenshots are disabled on this chat.");
-      }
-    };
-
-    const preventContextMenu = (e) => {
-      e.preventDefault();
-    };
-
-    const detectTouchHold = (e) => {
-      // basic touch event detection to trigger overlay on long press
-      setShowOverlay(true);
-      setTimeout(() => setShowOverlay(false), 3000);
-    };
-
-    window.addEventListener("keydown", blockPrintScreen);
-    window.addEventListener("contextmenu", preventContextMenu);
-    window.addEventListener("touchstart", detectTouchHold);
-
-    return () => {
-      window.removeEventListener("keydown", blockPrintScreen);
-      window.removeEventListener("contextmenu", preventContextMenu);
-      window.removeEventListener("touchstart", detectTouchHold);
-    };
-  }, []);
-
   if (isMessagesLoading) {
     return (
       <div className="flex-1 flex flex-col overflow-auto">
@@ -163,26 +133,6 @@ const ChatContainer = () => {
   return (
     <div className="flex-1 flex flex-col overflow-auto">
       <ChatHeader />
-
-      {/* Screenshot Protection Watermark/Overlay */}
-      {showOverlay && (
-        <div className="absolute inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center pointer-events-none">
-          <p className="text-white text-sm font-bold">Screenshot blocked</p>
-        </div>
-      )}
-
-      {/* Dynamic Watermark */}
-      <div className="absolute inset-0 z-10 pointer-events-none select-none opacity-10 text-[10px] p-4 flex flex-wrap">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <span
-            key={i}
-            className="m-2 rotate-[-20deg] text-gray-500"
-            style={{ whiteSpace: "nowrap" }}
-          >
-            {authUser?.username || "Protected User"}
-          </span>
-        ))}
-      </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {decryptedMessages.map((message) => (
